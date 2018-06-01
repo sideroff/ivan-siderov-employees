@@ -1,5 +1,20 @@
+function csvToJSON(csv) {
+  let lines = csv.split('\n')
+  let result = []
+  let headers = lines[0].split(",")
+  for (var i = 1; i < lines.length; i++) {
+    let line = lines[i].split(",")
+    let obj = {
+      empID: Number(line[0]),
+      projectID: Number(line[1]),
+      dateFrom: moment.utc(line[2]),
+      dateTo: (!line[3] || line[3] === 'NULL') ? moment.utc() : moment.utc(line[3])
+    }
+    result.push(obj)
+  }
 
-
+  return result
+}
 
 function maxDate(tDate, oDate) {
   return tDate > oDate ? tDate : oDate
@@ -8,7 +23,6 @@ function maxDate(tDate, oDate) {
 function minDate(tDate, oDate) {
   return tDate < oDate ? tDate : oDate
 }
-
 
 function getLongestCommonWorkPeriod(entries) {
 
@@ -89,107 +103,90 @@ function getLongestCommonWorkPeriod(entries) {
 }
 
 window.onload = () => {
-  {
-    // let entries = [
-    //   {
-    //     empID: 1,
-    //     projectID: 1,
-    //     dateFrom: moment.utc("2017-04-01"),
-    //     dateTo: moment.utc("2017-05-10")
-    //   },
-    //   {
-    //     empID: 2,
-    //     projectID: 1,
-    //     dateFrom: moment.utc("2017-05-01"),
-    //     dateTo: moment.utc("2017-06-01")
-    //   },
-    //   {
-    //     empID: 1,
-    //     projectID: 2,
-    //     dateFrom: moment.utc("2017-05-01"),
-    //     dateTo: moment.utc("2017-06-01")
-    //   },
-    //   {
-    //     empID: 2,
-    //     projectID: 2,
-    //     dateFrom: moment.utc("2017-05-20"),
-    //     dateTo: moment.utc("2017-06-01")
-    //   }
-    // ]
-
-    // console.log(JSON.stringify(entries))
-    // console.log(getLongestCommonWorkPeriod(entries))
-
-  }
-
   if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
     return alert('Please open this example in a browser that supports File APIs.');
   }
 
+  const columns = [
+    {
+      Header: 'Employee ID',
+      accessor: 'empID' // String-based value accessors!
+    },
+    {
+      Header: 'Project ID',
+      accessor: 'projectID'
+    },
+    {
+      id: 'dateFrom',
+      Header: 'Date From',
+      accessor: e => e.dateFrom.format('LL')
+    },
+    {
+      id: 'dateTo',
+      Header: 'Date To',
+      accessor: e => e.dateTo.format('LL')
+    }
+  ]
 
+  const ReactTable = window.ReactTable.default
 
-  // ReactDOM.render(
-  //   React.createElement(Home, {}, null),
-  //   document.getElementById('app'))
+  class Home extends React.Component {
+    constructor(props) {
+      super(props)
+      this.onFileChange = this.onFileChange.bind(this)
 
-
-  document.getElementById('file-input').addEventListener('change', event => {
-    let file = event.target.files[0]
-
-    let reader = new FileReader()
-    reader.onload = () => {
-      let entries = csvToJSON(reader.result)
-      let max = getLongestCommonWorkPeriod(entries)
-
-      console.log(max)
+      this.state = {
+        entries: [],
+        max: null
+      }
     }
 
-    reader.readAsText(file)
+    onFileChange(event) {
+      let file = event.target.files[0]
 
-  })
-}
+      let reader = new FileReader()
+      reader.onload = () => {
+        let entries = csvToJSON(reader.result)
+        let max = getLongestCommonWorkPeriod(entries)
 
+        this.setState({
+          entries,
+          max
+        })
+      }
 
-function csvToJSON(csv) {
-  let lines = csv.split('\n')
-  let result = []
-  let headers = lines[0].split(",")
-  for (var i = 1; i < lines.length; i++) {
-    let line = lines[i].split(",")
-    let obj = {
-      empID: Number(line[0]),
-      projectID: Number(line[1]),
-      dateFrom: moment.utc(line[2]),
-      dateTo: (!line[3] || line[3] === 'NULL') ? moment.utc() : moment.utc(line[3])
+      reader.readAsText(file)
     }
-    result.push(obj)
+
+    render() {
+      return React.createElement('div', null,
+        React.createElement('h2', {}, 'Please choose a csv file.'),
+        React.createElement(FileInput, { onChange: this.onFileChange }),
+        React.createElement('hr', {}),
+        React.createElement('div', {}, this.state.max ? `Maximum time worked together done by employees ${this.state.max.employeeOne} & ${this.state.max.employeeTwo}, they worked for ${this.state.max.totalDays} days together.` : ''),
+        React.createElement('hr', {}),
+        React.createElement(ReactTable, { data: this.state.entries, columns }),
+
+      )
+    }
   }
 
-  return result
+  class FileInput extends React.Component {
+    constructor(props) {
+      super(props)
+    }
+
+    render() {
+      return React.createElement('input', { type: 'file', onChange: this.props.onChange })
+    }
+  }
+
+  ReactDOM.render(
+    React.createElement(Home, {}, null),
+    document.getElementById('app'))
 }
 
 
-// class Home extends React.Component {
-//   constructor(props) {
-//     super(props)
-//   }
 
-//   render() {
-//     return React.createElement('div', null, `Hello world from react`)
-//   }
-// }
 
-// class FileInput extends React.Component {
-//   constructor(props) {
-//     super(props)
-//     this.log = this.log.bind(this)
-//   }
 
-//   log() {
-//     console.log('here')
-//   }
-
-//   render() {
-//     return React.createElement('input', {}, `Hello world from react`)
-//   }
-// }
