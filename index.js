@@ -74,10 +74,13 @@ function getLongestCommonWorkPeriod(entries) {
     }
   }
 
-  let max = {
-    employeeOne: null,
-    employeeTwo: null,
-    totalDays: 0
+  let result = {
+    max: {
+      employeeOne: null,
+      employeeTwo: null,
+      totalDays: 0
+    },
+    entries: []
   }
 
   for (let compoundKey in validRangesByCompoundKey) {
@@ -89,17 +92,21 @@ function getLongestCommonWorkPeriod(entries) {
       days += Math.abs((range.dateFrom.valueOf() - range.dateTo.valueOf()) / (86400000))
     }
 
-    if (days > max.totalDays) {
-      let ids = compoundKey.split('-')
-      max = {
-        employeeOne: ids[0],
-        employeeTwo: ids[1],
-        totalDays: days
-      }
+    let ids = compoundKey.split('-')
+    let newEntry = {
+      employeeOne: ids[0],
+      employeeTwo: ids[1],
+      totalDays: days
+    }
+
+    result.entries.push(newEntry)
+
+    if (newEntry.totalDays > result.max.totalDays) {
+      result.max = newEntry
     }
   }
 
-  return max
+  return result
 }
 
 window.onload = () => {
@@ -109,22 +116,17 @@ window.onload = () => {
 
   const columns = [
     {
-      Header: 'Employee ID',
-      accessor: 'empID' // String-based value accessors!
+      Header: 'Employee ID #1',
+      accessor: 'employeeOne'
     },
     {
-      Header: 'Project ID',
-      accessor: 'projectID'
+      Header: 'Employee ID #2',
+      accessor: 'employeeTwo'
     },
     {
-      id: 'dateFrom',
-      Header: 'Date From',
-      accessor: e => e.dateFrom.format('LL')
-    },
-    {
-      id: 'dateTo',
-      Header: 'Date To',
-      accessor: e => e.dateTo.format('LL')
+      id: 'daysWorked',
+      Header: 'Days Worked',
+      accessor: 'totalDays'
     }
   ]
 
@@ -147,11 +149,11 @@ window.onload = () => {
       let reader = new FileReader()
       reader.onload = () => {
         let entries = csvToJSON(reader.result)
-        let max = getLongestCommonWorkPeriod(entries)
+        let result = getLongestCommonWorkPeriod(entries)
 
         this.setState({
-          entries,
-          max
+          entries: result.entries,
+          max: result.max
         })
       }
 
